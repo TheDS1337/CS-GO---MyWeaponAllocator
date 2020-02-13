@@ -37,6 +37,8 @@
 #define DEAGLE_ROUND 4
 #define RIFLE_ROUND 5
 
+#define VIP_FLAG ADMFLAG_RESERVATION
+
 bool g_bIsLateLoad = false;
 bool g_bSniper[MAXPLAYERS + 1] = false;
 bool g_bIsCT[MAXPLAYERS + 1] = false;
@@ -45,9 +47,11 @@ bool g_bXm1014[MAXPLAYERS + 1] = false;
 
 Handle g_hPrimary_CT = null;
 Handle g_hSecondary_CT = null;
+Handle g_hSecondaryAWP_CT = null;
 Handle g_hSMG_CT = null;
 Handle g_hPrimary_T = null;
 Handle g_hSecondary_T = null;
+Handle g_hSecondaryAWP_T = null;
 Handle g_hSMG_T = null;
 Handle g_hSniper = null;
 Handle g_hTaser = null;
@@ -122,9 +126,11 @@ int g_iRounds_Force = 0;
 
 char g_sPrimary_CT[MAXPLAYERS + 1][24];
 char g_sSecondary_CT[MAXPLAYERS + 1][24];
+char g_sSecondaryAWP_CT[MAXPLAYERS + 1][24];
 char g_sSMG_CT[MAXPLAYERS + 1][24];
 char g_sPrimary_T[MAXPLAYERS + 1][24];
 char g_sSecondary_T[MAXPLAYERS + 1][24];
+char g_sSecondaryAWP_T[MAXPLAYERS + 1][24];
 char g_sSMG_T[MAXPLAYERS + 1][24];
 char g_sBombSite[16];
 char g_sRoundType[64];
@@ -222,9 +228,11 @@ public void OnPluginStart()
 
 	g_hPrimary_CT = RegClientCookie("MyWA - Primary CT", "", CookieAccess_Private);
 	g_hSecondary_CT = RegClientCookie("MyWA - Secondary CT", "", CookieAccess_Private);
+	g_hSecondaryAWP_CT = RegClientCookie("MyWA - AWP Pistol CT", "", CookieAccess_Private);
 	g_hSMG_CT = RegClientCookie("MyWA MG - CT", "", CookieAccess_Private);
 	g_hPrimary_T = RegClientCookie("MyWA - Primary T", "", CookieAccess_Private);
 	g_hSecondary_T = RegClientCookie("MyWA - Secondary T", "", CookieAccess_Private);
+	g_hSecondaryAWP_T = RegClientCookie("MyWA - AWP Pistol T", "", CookieAccess_Private);
 	g_hSMG_T = RegClientCookie("MyWA - SMG T", "", CookieAccess_Private);
 	g_hSniper = RegClientCookie("MyWA - Sniper", "", CookieAccess_Private);
 	g_hTaser = RegClientCookie("MyWA - Taser", "", CookieAccess_Private);
@@ -273,9 +281,11 @@ public void OnClientConnected(int client)
 {
 	Format(g_sPrimary_CT[client], sizeof(g_sPrimary_CT), "weapon_m4a1");
 	Format(g_sSecondary_CT[client], sizeof(g_sSecondary_CT), "weapon_usp_silencer");
+	Format(g_sSecondaryAWP_CT[client], sizeof(g_sSecondaryAWP_CT), "weapon_usp_silencer");
 	Format(g_sSMG_CT[client], sizeof(g_sSMG_CT), "weapon_ump45");
 	Format(g_sPrimary_T[client], sizeof(g_sPrimary_T), "weapon_ak47");
 	Format(g_sSecondary_T[client], sizeof(g_sSecondary_T), "weapon_glock");
+	Format(g_sSecondaryAWP_T[client], sizeof(g_sSecondaryAWP_T), "weapon_glock");
 	Format(g_sSMG_T[client], sizeof(g_sSMG_T), "weapon_ump45");
 
 	g_bSniper[client] = false;
@@ -302,6 +312,12 @@ public void OnClientCookiesCached(int client)
 		Format (g_sSecondary_CT[client], sizeof(g_sSecondary_CT), sBuffer);
 	}
 
+	GetClientCookie(client, g_hSecondaryAWP_CT, sBuffer, sizeof(sBuffer));
+	if (strlen(sBuffer) > 5)
+	{
+		Format (g_sSecondaryAWP_CT[client], sizeof(g_sSecondaryAWP_CT), sBuffer);
+	}
+
 	GetClientCookie(client, g_hSMG_CT, sBuffer, sizeof(sBuffer));
 	if (strlen(sBuffer) > 5)
 	{
@@ -318,6 +334,12 @@ public void OnClientCookiesCached(int client)
 	if (strlen(sBuffer) > 5)
 	{
 		Format (g_sSecondary_T[client], sizeof(g_sSecondary_T), sBuffer);
+	}
+
+	GetClientCookie(client, g_hSecondaryAWP_T, sBuffer, sizeof(sBuffer));
+	if (strlen(sBuffer) > 5)
+	{
+		Format (g_sSecondaryAWP_T[client], sizeof(g_sSecondaryAWP_T), sBuffer);
 	}
 
 	GetClientCookie(client, g_hSMG_T, sBuffer, sizeof(sBuffer));
@@ -363,9 +385,11 @@ public void OnClientDisconnect(int client)
 
 	SetClientCookie(client, g_hPrimary_CT, g_sPrimary_CT[client]);
 	SetClientCookie(client, g_hSecondary_CT, g_sSecondary_CT[client]);
+	SetClientCookie(client, g_hSecondaryAWP_CT, g_sSecondaryAWP_CT[client]);
 	SetClientCookie(client, g_hSMG_CT, g_sSMG_CT[client]);
 	SetClientCookie(client, g_hPrimary_T, g_sPrimary_T[client]);
 	SetClientCookie(client, g_hSecondary_T, g_sSecondary_T[client]);
+	SetClientCookie(client, g_hSecondaryAWP_T, g_sSecondaryAWP_T[client]);
 	SetClientCookie(client, g_hSMG_T, g_sSMG_T[client]);
 	SetClientCookie(client, g_hSniper, g_bSniper[client] ? "1" : "0");
 	SetClientCookie(client, g_hTaser, g_bTaser[client] ? "1" : "0");
@@ -655,20 +679,77 @@ public Action Timer_ShowInfo(Handle timer)
 
 void Menus_Weapons(int client)
 {
-	if (GetClientTeam(client) == CS_TEAM_CT)
+	int team = GetClientTeam(client);
+	bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+
+	char sBuffer[128], weapon[32];
+	Menu menu = null;	
+
+	if (team == CS_TEAM_CT)
 	{
-		g_bIsCT[client] = true;
+		menu = new Menu(Handler_Weapons);
+		g_bIsCT[client] = true;	
+
+		GetWeaponName(g_sPrimary_CT[client], weapon, sizeof(weapon));		
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Buy round weapon", weapon);
+		menu.AddItem("buy_round_weapon", sBuffer);
+
+		GetWeaponName(g_sSMG_CT[client], weapon, sizeof(weapon));
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Force round weapon", weapon);
+		menu.AddItem("force_round_weapon", sBuffer);
+
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Allow AWP", g_bSniper[client] ? "Yes" : "No");		
+		menu.AddItem("allow_awp", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+
+		GetWeaponName(g_sSecondaryAWP_CT[client], weapon, sizeof(weapon));
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "AWP Pistol", weapon);
+		menu.AddItem("awp_pistol", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+
+		GetWeaponName(g_sSecondary_CT[client], weapon, sizeof(weapon));
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Pistol round weapon", weapon);
+		menu.AddItem("pistol_round_weapon", sBuffer);
+
+		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select CT weapons");
+		menu.SetTitle(sBuffer);
 	}
-	else if (GetClientTeam(client) == CS_TEAM_T)
+	else if (team == CS_TEAM_T)
 	{
+		menu = new Menu(Handler_Weapons);
 		g_bIsCT[client] = false;
+
+		GetWeaponName(g_sPrimary_T[client], weapon, sizeof(weapon));	
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Buy round weapon", weapon);
+		menu.AddItem("buy_round_weapon", sBuffer);
+
+		GetWeaponName(g_sSMG_T[client], weapon, sizeof(weapon));
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Force round weapon", weapon);
+		menu.AddItem("force_round_weapon", sBuffer);
+
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Allow AWP", g_bSniper[client] ? "Yes" : "No");
+		menu.AddItem("allow_awp", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+
+		GetWeaponName(g_sSecondaryAWP_T[client], weapon, sizeof(weapon));
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "AWP Pistol", weapon);
+		menu.AddItem("awp_pistol", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+
+		GetWeaponName(g_sSecondary_T[client], weapon, sizeof(weapon));
+		Format(sBuffer, sizeof(sBuffer), "%t %s", "Pistol round weapon", weapon);
+		menu.AddItem("pistol_round_weapon", sBuffer);
+
+		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select T weapons");
+		menu.SetTitle(sBuffer);
 	}
 	else
 	{
-		char sBuffer[128];
 		Format(sBuffer, sizeof(sBuffer), "%t", "You need to be in a team");
 		Retakes_Message(client, sBuffer);
 		return;
+	}	
+	
+	if( menu != null )
+	{
+		menu.ExitButton = true;
+		menu.Display(client, MENU_TIME_FOREVER);
 	}
 
 	if (gc_iMode.IntValue < 3)
@@ -687,23 +768,31 @@ void Menus_Weapons(int client)
 
 void Menu_Primary(int client)
 {
+	bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+
 	char sBuffer[255];
-	Menu menu = new Menu(Handler_Primary);
+	Menu menu = new Menu(Handler_Primary);	
 
 	if (g_bIsCT[client])
 	{
 		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select a CT rifle");
 		menu.AddItem("weapon_m4a1", "M4A1");
+		menu.AddItem("weapon_ak47", "AK-47 [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		menu.AddItem("weapon_m4a1_silencer", "M4A1-S");
 		menu.AddItem("weapon_famas", "FAMAS");
 		menu.AddItem("weapon_aug", "AUG");
+		menu.AddItem("weapon_awp", "AWP [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	}
 	else if (!g_bIsCT[client])
 	{
 		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select a T rifle");
 		menu.AddItem("weapon_ak47", "AK-47");
+		menu.AddItem("weapon_m4a1", "M4A1 [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		menu.AddItem("weapon_m4a1_silencer", "M4A1-S [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		menu.AddItem("weapon_galilar", "Galil AR");
 		menu.AddItem("weapon_sg556", "SG 553");
+		menu.AddItem("weapon_aug", "AUG [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		menu.AddItem("weapon_awp", "AWP [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	}
 
 	if (gc_bP90.BoolValue)
@@ -732,11 +821,50 @@ void Menu_Secondary(int client)
 		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select a CT pistol");
 		menu.AddItem("weapon_usp_silencer", "USP-S");
 		menu.AddItem("weapon_hkp2000", "P2000");
-		menu.AddItem("weapon_fiveseven", "Five-SeveN");
+		menu.AddItem("weapon_fiveseven", "Five-Seven");
 	}
 	else if (!g_bIsCT[client])
 	{
 		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select a T pistol");
+		menu.AddItem("weapon_glock", "Glock-18");
+		menu.AddItem("weapon_tec9", "Tec-9");
+		menu.AddItem("weapon_elite", "Dual Berettas");
+	}
+
+	if (gc_bDeagle.BoolValue)
+	{
+		menu.AddItem("weapon_deagle", "Desert Eagle");
+	}
+
+	if (gc_bRevolver.BoolValue)
+	{
+		menu.AddItem("weapon_revolver", "Revolver");
+	}
+
+	menu.AddItem("weapon_cz75a", "CZ75-Auto");
+	menu.AddItem("weapon_p250", "P250");
+
+	menu.SetTitle(sBuffer);
+	menu.ExitButton = true;
+
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+void Menu_SecondaryAWP(int client)
+{
+	char sBuffer[255];
+	Menu menu = new Menu(Handler_SecondaryAWP);
+
+	if (g_bIsCT[client])
+	{
+		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select an AWP CT pistol");
+		menu.AddItem("weapon_usp_silencer", "USP-S");
+		menu.AddItem("weapon_hkp2000", "P2000");
+		menu.AddItem("weapon_fiveseven", "Five-Seven");
+	}
+	else if (!g_bIsCT[client])
+	{
+		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select an AWP T pistol");
 		menu.AddItem("weapon_glock", "Glock-18");
 		menu.AddItem("weapon_tec9", "Tec-9");
 		menu.AddItem("weapon_elite", "Dual Berettas");
@@ -847,23 +975,98 @@ public void Menu_Xm1014(int client)
 
 	menu.SetTitle(sBuffer);
 	menu.Display(client, MENU_TIME_FOREVER);
-}
+}		
 
+public int Handler_Weapons(Menu menu, MenuAction action, int client, int selection)
+{
+	if (action == MenuAction_Select)
+	{
+		bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+
+		char sBuffer[24];
+		menu.GetItem(selection, sBuffer, sizeof(sBuffer));
+
+		if( strcmp(sBuffer, "buy_round_weapon") == 0 )
+		{		
+			Menu_Primary(client);				
+		}
+		else if( strcmp(sBuffer, "force_round_weapon") == 0 )
+		{		
+			Menu_SMG(client);				
+		}
+		else if( strcmp(sBuffer, "allow_awp") == 0 )
+		{	
+			if( !IsVip )
+			{
+				delete menu;
+				Menus_Weapons(client);
+
+				PrintToChat(client, "You must buy VIP to access this item.");
+				return 0; 
+			}
+
+			Menu_AWP(client);					
+		}
+		else if( strcmp(sBuffer, "awp_pistol") == 0 )
+		{		
+			if( !IsVip )
+			{
+				delete menu;
+				Menus_Weapons(client);
+
+				PrintToChat(client, "You must buy VIP to access this item.");
+				return 0; 
+			}
+			
+			Menu_SecondaryAWP(client);				
+		}
+		else if( strcmp(sBuffer, "pistol_round_weapon") == 0 )
+		{	
+			Menu_Secondary(client);						
+		}		
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+
+	return 0;
+}
 
 public int Handler_Primary(Menu menu, MenuAction action, int client, int selection)
 {
 	if (action == MenuAction_Select)
 	{
+		bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+
 		char sBuffer[24];
 
 		menu.GetItem(selection, sBuffer, sizeof(sBuffer));
 
 		if (g_bIsCT[client])
 		{
+			if( (strcmp(sBuffer, "weapon_ak47") == 0 || strcmp(sBuffer, "weapon_awp") == 0) && !IsVip )
+			{
+				delete menu;
+				Menu_Primary(client);
+
+				PrintToChat(client, "You must buy VIP to access this item.");
+				return 0;
+			}
+
 			Format (g_sPrimary_CT[client], sizeof(g_sPrimary_CT), sBuffer);
 		}
 		else if(!g_bIsCT[client])
 		{
+			if( (strcmp(sBuffer, "weapon_m4a1") == 0 || strcmp(sBuffer, "weapon_m4a1_silencer") == 0 || strcmp(sBuffer, "weapon_aug") == 0 || strcmp(sBuffer, "weapon_awp") == 0) && !IsVip )
+			{
+				delete menu;
+				Menu_Primary(client);
+
+				PrintToChat(client, "You must buy VIP to access this item.");
+				return 0; 
+			}
+
 			Format (g_sPrimary_T[client], sizeof(g_sPrimary_T), sBuffer);
 		}
 
@@ -880,6 +1083,8 @@ public int Handler_Primary(Menu menu, MenuAction action, int client, int selecti
 	{
 		delete menu;
 	}
+
+	return 0;
 }
 
 public int Handler_Secondary(Menu menu, MenuAction action, int client, int selection)
@@ -907,6 +1112,29 @@ public int Handler_Secondary(Menu menu, MenuAction action, int client, int selec
 		{
 			Retakes_Message(client, "%t", "Weapons next round");
 		}
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+}
+
+public int Handler_SecondaryAWP(Menu menu, MenuAction action, int client, int selection)
+{
+	if (action == MenuAction_Select)
+	{
+		char sBuffer[24];
+
+		menu.GetItem(selection, sBuffer, sizeof(sBuffer));
+
+		if (g_bIsCT[client])
+		{
+			Format (g_sSecondaryAWP_CT[client], sizeof(g_sSecondaryAWP_CT), sBuffer);
+		}
+		else if(!g_bIsCT[client])
+		{
+			Format (g_sSecondaryAWP_T[client], sizeof(g_sSecondaryAWP_T), sBuffer);
+		}		
 	}
 	else if (action == MenuAction_End)
 	{
@@ -1048,6 +1276,8 @@ void EquipWeapons(int client)
 	if (!gc_bPlugin.BoolValue || !Retakes_Live())
 		return;
 
+	int team = GetClientTeam(client);
+
 	int iMoney = 0;
 	StripPlayerWeapons(client);
 
@@ -1059,7 +1289,7 @@ void EquipWeapons(int client)
 	{
 		iMoney = gc_iFullMoney.IntValue;
 
-		if (GetClientTeam(client) == CS_TEAM_CT)
+		if (team == CS_TEAM_CT)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinCT.IntValue <= GetPlayerCount(true, CS_TEAM_CT))
@@ -1078,6 +1308,10 @@ void EquipWeapons(int client)
 				{
 					GivePlayerItem(client, "weapon_awp");
 					iMoney -= GetWeaponPrice("weapon_awp");
+
+					GivePlayerItem(client, g_sSecondaryAWP_CT[client]);
+					iMoney -= GetWeaponPrice(g_sSecondaryAWP_CT[client]);
+
 					g_iAWP_CT++;
 				}
 				else
@@ -1110,7 +1344,7 @@ void EquipWeapons(int client)
 			GivePlayerItem(client, g_sSecondary_CT[client]);
 			iMoney -= GetWeaponPrice(g_sSecondary_CT[client]);
 		}
-		else if (GetClientTeam(client) == CS_TEAM_T)
+		else if (team == CS_TEAM_T)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinT.IntValue <= GetPlayerCount(true, CS_TEAM_T))
@@ -1128,6 +1362,10 @@ void EquipWeapons(int client)
 				{
 					GivePlayerItem(client, "weapon_awp");
 					iMoney -= GetWeaponPrice("weapon_awp");
+
+					GivePlayerItem(client, g_sSecondaryAWP_T[client]);
+					iMoney -= GetWeaponPrice(g_sSecondaryAWP_T[client]);
+
 					g_iAWP_T++;
 				}
 				else
@@ -1165,7 +1403,7 @@ void EquipWeapons(int client)
 	{
 		iMoney = gc_iPistolMoney.IntValue;
 
-		if (GetClientTeam(client) == CS_TEAM_CT)
+		if (team == CS_TEAM_CT)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinCT.IntValue <= GetPlayerCount(true, CS_TEAM_CT))
@@ -1180,7 +1418,7 @@ void EquipWeapons(int client)
 			GivePlayerItem(client, g_sSecondary_CT[client]);
 			iMoney -= GetWeaponPrice(g_sSecondary_CT[client]);
 		}
-		else if (GetClientTeam(client) == CS_TEAM_T)
+		else if (team == CS_TEAM_T)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinT.IntValue <= GetPlayerCount(true, CS_TEAM_T))
@@ -1200,7 +1438,7 @@ void EquipWeapons(int client)
 	{
 		iMoney = gc_iFullMoney.IntValue;
 
-		if (GetClientTeam(client) == CS_TEAM_CT)
+		if (team == CS_TEAM_CT)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinCT.IntValue <= GetPlayerCount(true, CS_TEAM_CT))
@@ -1215,7 +1453,7 @@ void EquipWeapons(int client)
 			GivePlayerItem(client, g_sPrimary_CT[client]);
 			iMoney -= GetWeaponPrice(g_sPrimary_CT[client]);
 		}
-		else if (GetClientTeam(client) == CS_TEAM_T)
+		else if (team == CS_TEAM_T)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinT.IntValue <= GetPlayerCount(true, CS_TEAM_T))
@@ -1235,7 +1473,7 @@ void EquipWeapons(int client)
 	{
 		iMoney = gc_iForceMoney.IntValue;
 
-		if (GetClientTeam(client) == CS_TEAM_CT)
+		if (team == CS_TEAM_CT)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinCT.IntValue <= GetPlayerCount(true, CS_TEAM_CT))
@@ -1291,7 +1529,7 @@ void EquipWeapons(int client)
 				GivePlayerItem(client, "weapon_usp_silencer");
 			}
 		}
-		else if (GetClientTeam(client) == CS_TEAM_T)
+		else if (team == CS_TEAM_T)
 		{
 			int iRandom = GetRandomInt(1, 3);
 			if (iRandom == 3 && g_bTaser[client] && gc_iTaser_MinT.IntValue <= GetPlayerCount(true, CS_TEAM_T))
@@ -1343,7 +1581,7 @@ void EquipWeapons(int client)
 	}
 	else if (g_iRoundType == DEAGLE_ROUND)
 	{
-		if (GetClientTeam(client) == CS_TEAM_CT)
+		if (team == CS_TEAM_CT)
 		{
 			GivePlayerItem(client, "weapon_knife");
 
@@ -1352,7 +1590,7 @@ void EquipWeapons(int client)
 				SetEntProp(client, Prop_Send, "m_bHasDefuser", 1);
 			}
 		}
-		else if (GetClientTeam(client) == CS_TEAM_T)
+		else if (team == CS_TEAM_T)
 		{
 			GivePlayerItem(client, "weapon_knife_t");
 		}
@@ -1424,9 +1662,10 @@ void GiveArmorKit(int client, int money, int order)
 
 void GiveNades(int client, int money, int order)
 {
+	int team = GetClientTeam(client);
 	int iRandom = GetRandomInt(1, 4);
 
-	if (GetClientTeam(client) == CS_TEAM_T)
+	if (team == CS_TEAM_T)
 	{
 		GivePlayerItem(client, "weapon_knife_t");
 
@@ -1435,7 +1674,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iMolotov_T < gc_iMolotov_T.IntValue && money >= 400)
 			{
 				GivePlayerItem(client, "weapon_molotov");
-				money -= 400;
+				money -= GetWeaponPrice("weapon_molotov");
 				g_iMolotov_T++;
 			}
 			else
@@ -1448,7 +1687,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iSmokegrenade_T < gc_iSmoke_T.IntValue && money >= 300)
 			{
 				GivePlayerItem(client, "weapon_smokegrenade");
-				money -= 300;
+				money -= GetWeaponPrice("weapon_smokegrenade");
 				g_iSmokegrenade_T++;
 			}
 			else
@@ -1461,7 +1700,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iHEgrenade_T < gc_iHEgrenade_T.IntValue && money >= 300)
 			{
 				GivePlayerItem(client, "weapon_hegrenade");
-				money -= 300;
+				money -= GetWeaponPrice("weapon_hegrenade");
 				g_iHEgrenade_T++;
 			}
 			else
@@ -1474,12 +1713,12 @@ void GiveNades(int client, int money, int order)
 			if (g_iFlashbang_T < gc_iFlash_T.IntValue && money >= 200)
 			{
 				GivePlayerItem(client, "weapon_flashbang");
-				money -= 200;
+				money -= GetWeaponPrice("weapon_flashbang");
 				g_iFlashbang_T++;
 			}
 		}
 	}
-	else if (GetClientTeam(client) == CS_TEAM_CT)
+	else if (team == CS_TEAM_CT)
 	{
 		GivePlayerItem(client, "weapon_knife");
 		
@@ -1488,7 +1727,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iMolotov_CT < gc_iMolotov_CT.IntValue && money >= 600)
 			{
 				GivePlayerItem(client, "weapon_incgrenade");
-				money -= 400;
+				money -= GetWeaponPrice("weapon_incgrenade");
 				g_iMolotov_CT++;
 			}
 			else
@@ -1501,7 +1740,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iSmokegrenade_CT < gc_iSmoke_CT.IntValue && money >= 300)
 			{
 				GivePlayerItem(client, "weapon_smokegrenade");
-				money -= 300;
+				money -= GetWeaponPrice("weapon_smokegrenade");
 				g_iSmokegrenade_CT++;
 			}
 			else
@@ -1514,7 +1753,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iHEgrenade_CT < gc_iHEgrenade_CT.IntValue && money >= 300)
 			{
 				GivePlayerItem(client, "weapon_hegrenade");
-				money -= 300;
+				money -= GetWeaponPrice("weapon_hegrenade");
 				g_iHEgrenade_CT++;
 			}
 			else
@@ -1527,7 +1766,7 @@ void GiveNades(int client, int money, int order)
 			if (g_iFlashbang_CT < gc_iFlash_CT.IntValue && money >= 200)
 			{
 				GivePlayerItem(client, "weapon_flashbang");
-				money -= 200;
+				money -= GetWeaponPrice("weapon_flashbang");
 				g_iFlashbang_CT++;
 			}
 		}
@@ -1731,6 +1970,124 @@ int GetWeaponPrice(char[] weapon)
 		
 	else if (StrEqual(weapon, "weapon_taser"))
 		return 200;
+
+	return 0;
+}
+
+int GetWeaponName(const char[] classname, char[] name, int maxLen)
+{
+	if( strcmp(classname, "weapon_m4a1") == 0 )
+	{
+		return Format(name, maxLen, "M4A1");
+	}
+	else if( strcmp(classname, "weapon_m4a1_silencer") == 0 )
+	{
+		return Format(name, maxLen, "M4A1-S");
+	}
+	else if( strcmp(classname, "weapon_famas") == 0 )
+	{
+		return Format(name, maxLen, "FAMAS");
+	}
+	else if( strcmp(classname, "weapon_aug") == 0 )
+	{
+		return Format(name, maxLen, "AUG");
+	}
+	else if( strcmp(classname, "weapon_ak47") == 0 )
+	{
+		return Format(name, maxLen, "AK-47");
+	}
+	else if( strcmp(classname, "weapon_galilar") == 0 )
+	{
+		return Format(name, maxLen, "Galil AR");
+	}
+	else if( strcmp(classname, "weapon_sg556") == 0 )
+	{
+		return Format(name, maxLen, "SG 553");
+	}
+	else if( strcmp(classname, "weapon_awp") == 0 )
+	{
+		return Format(name, maxLen, "AWP");
+	}	
+	else if( strcmp(classname, "weapon_p90") == 0 )
+	{
+		return Format(name, maxLen, "P90");
+	}
+	else if( strcmp(classname, "weapon_nova") == 0 )
+	{
+		return Format(name, maxLen, "Nova");
+	}
+	else if( strcmp(classname, "weapon_usp_silencer") == 0 )
+	{
+		return Format(name, maxLen, "USP-S");
+	}
+	else if( strcmp(classname, "weapon_hkp2000") == 0 )
+	{
+		return Format(name, maxLen, "P2000");
+	}
+	else if( strcmp(classname, "weapon_fiveseven") == 0 )
+	{
+		return Format(name, maxLen, "Five-Seven");
+	}
+	else if( strcmp(classname, "weapon_glock") == 0 )
+	{
+		return Format(name, maxLen, "Glock-18");
+	}
+	else if( strcmp(classname, "weapon_tec9") == 0 )
+	{
+		return Format(name, maxLen, "Tec-9");
+	}
+	else if( strcmp(classname, "weapon_elite") == 0 )
+	{
+		return Format(name, maxLen, "Dual Berettas");
+	}
+	else if( strcmp(classname, "weapon_deagle") == 0 )
+	{
+		return Format(name, maxLen, "Desert Eagle");
+	}
+	else if( strcmp(classname, "weapon_revolver") == 0 )
+	{
+		return Format(name, maxLen, "Revolver");
+	}
+	else if( strcmp(classname, "weapon_cz75a") == 0 )
+	{
+		return Format(name, maxLen, "CZ75-Auto");
+	}
+	else if( strcmp(classname, "weapon_p250") == 0 )
+	{
+		return Format(name, maxLen, "P250");
+	}	
+	else if( strcmp(classname, "weapon_ump45") == 0 )
+	{
+		return Format(name, maxLen, "UMP-45");
+	}	
+	else if( strcmp(classname, "weapon_bizon") == 0 )
+	{
+		return Format(name, maxLen, "PP-Bizon");
+	}
+	else if( strcmp(classname, "weapon_mp7") == 0 )
+	{
+		return Format(name, maxLen, "MP7");
+	}
+	else if( strcmp(classname, "weapon_mp5sd") == 0 )
+	{
+		return Format(name, maxLen, "MP5-SD");
+	}
+	else if( strcmp(classname, "weapon_mp9") == 0 )
+	{
+		return Format(name, maxLen, "MP9");
+	}
+	else if( strcmp(classname, "weapon_mag7") == 0 )
+	{
+		return Format(name, maxLen, "Mag-7");
+	}
+	else if( strcmp(classname, "weapon_mac10") == 0 )
+	{
+		return Format(name, maxLen, "Mac-10");
+	}
+	else if( strcmp(classname, "weapon_sawedoff") == 0 )
+	{
+		return Format(name, maxLen, "Sawed-Off");
+	}
 
 	return 0;
 }

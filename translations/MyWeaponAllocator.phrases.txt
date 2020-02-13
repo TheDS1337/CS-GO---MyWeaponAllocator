@@ -128,4 +128,49 @@
 		"en"		"You have to be on a team to choose your weapons."
 	}
 
+	"Select CT weapons"
+	{
+		"en"		"Select your CT weapons:"
+	}
+	
+	"Select T weapons"
+	{
+		"en"		"Select your T weapons:"
+	}
+
+	"Buy round weapon"
+	{
+		"en"		"Buy round weapon:"
+	}
+
+	"Force round weapon"
+	{
+		"en"		"Force round weapon:"
+	}
+
+	"Allow AWP"
+	{
+		"en"		"Allow yourself to have AWP:"
+	}
+
+	"AWP Pistol"
+	{
+		"en"		"AWP Pistol:"
+	}
+
+	"Pistol round weapon"
+	{
+		"en"		"Pistol round weapon:"
+	}
+
+	"Select an AWP CT pistol"
+	{
+		"en"		"Select an AWP CT pistol:"
+	}
+
+	"Select an AWP T pistol"
+	{
+		"en"		"Select an AWP T pistol:"
+	}
+
 }
