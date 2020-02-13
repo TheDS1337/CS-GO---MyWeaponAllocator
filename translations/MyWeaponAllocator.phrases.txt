@@ -65,12 +65,12 @@
 
 	"Select a CT pistol"
 	{
-		"en"		"Select a CT pistol:"
+		"en"		"Select a CT pistol for pistol/full buy rounds:"
 	}
 
 	"Select a T pistol"
 	{
-		"en"		"Select a T pistol:"
+		"en"		"Select a T pistol for pistol/full buy rounds:"
 	}
 
 	"Select a CT SMG"
@@ -171,6 +171,16 @@
 	"Select an AWP T pistol"
 	{
 		"en"		"Select an AWP T pistol:"
+	}
+
+	"Select a Force CT pistol"
+	{
+		"en"		"Select a CT pistol for force buy rounds:"
+	}
+
+	"Select a Force T pistol"
+	{
+		"en"		"Select a T pistol for force buy rounds:"
 	}
 
 }
