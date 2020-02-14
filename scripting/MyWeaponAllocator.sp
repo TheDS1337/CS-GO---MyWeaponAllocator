@@ -37,7 +37,7 @@
 #define DEAGLE_ROUND 4
 #define RIFLE_ROUND 5
 
-#define VIP_FLAG ADMFLAG_RESERVATION
+#define VIP_FLAG "s"
 
 bool g_bIsLateLoad = false;
 bool g_bSniper[MAXPLAYERS + 1] = false;
@@ -702,7 +702,7 @@ public Action Timer_ShowInfo(Handle timer)
 void Menus_Weapons(int client)
 {
 	int team = GetClientTeam(client);
-	bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+	bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
 
 	char sBuffer[128], weapon[32];
 	Menu menu = null;	
@@ -785,7 +785,7 @@ void Menus_Weapons(int client)
 
 void Menu_Primary(int client)
 {
-	bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+	bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
 
 	char sBuffer[255];
 	Menu menu = new Menu(Handler_Primary);	
@@ -1037,7 +1037,7 @@ public int Handler_Weapons(Menu menu, MenuAction action, int client, int selecti
 {
 	if (action == MenuAction_Select)
 	{
-		bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+		bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
 
 		char sBuffer[24];
 		menu.GetItem(selection, sBuffer, sizeof(sBuffer));
@@ -1087,7 +1087,7 @@ public int Handler_Primary(Menu menu, MenuAction action, int client, int selecti
 {
 	if (action == MenuAction_Select)
 	{
-		bool IsVip = GetUserFlagBits(client) & VIP_FLAG ? true : false;
+		bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
 
 		char sBuffer[24];
 
