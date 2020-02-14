@@ -1536,6 +1536,15 @@ void EquipWeapons(int client)
 					GivePlayerItem(client, "weapon_ssg08");
 					iMoney -= GetWeaponPrice("weapon_ssg08");
 					g_iScout_CT++;
+
+					if (StrEqual(g_sSecondary_CT[client], "weapon_hkp2000") && StrEqual(g_sSMG_CT[client], "weapon_deagle"))
+					{
+						GivePlayerItem(client, "weapon_hkp2000");
+					}
+					else if (StrEqual(g_sSMG_CT[client], "weapon_deagle"))
+					{
+						GivePlayerItem(client, "weapon_usp_silencer");
+					}
 				}
 				else
 				{
@@ -1589,6 +1598,11 @@ void EquipWeapons(int client)
 					GivePlayerItem(client, "weapon_ssg08");
 					iMoney -= GetWeaponPrice("weapon_ssg08");
 					g_iScout_T++;
+
+					if (StrEqual(g_sSMG_T[client], "weapon_deagle"))
+					{
+						GivePlayerItem(client, "weapon_glock");
+					}
 				}
 				else
 				{
