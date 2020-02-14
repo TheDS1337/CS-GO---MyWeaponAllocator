@@ -785,31 +785,23 @@ void Menus_Weapons(int client)
 
 void Menu_Primary(int client)
 {
-	bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
-
 	char sBuffer[255];
 	Menu menu = new Menu(Handler_Primary);	
 
 	if (g_bIsCT[client])
 	{
 		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select a CT rifle");
-		menu.AddItem("weapon_m4a1", "M4A1");
-		menu.AddItem("weapon_ak47", "AK-47 [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		menu.AddItem("weapon_m4a1", "M4A1");		
 		menu.AddItem("weapon_m4a1_silencer", "M4A1-S");
 		menu.AddItem("weapon_famas", "FAMAS");
-		menu.AddItem("weapon_aug", "AUG");
-		menu.AddItem("weapon_awp", "AWP [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		menu.AddItem("weapon_aug", "AUG");		
 	}
 	else if (!g_bIsCT[client])
 	{
 		Format(sBuffer, sizeof(sBuffer), "%t\n", "Select a T rifle");
-		menu.AddItem("weapon_ak47", "AK-47");
-		menu.AddItem("weapon_m4a1", "M4A1 [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		menu.AddItem("weapon_m4a1_silencer", "M4A1-S [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		menu.AddItem("weapon_ak47", "AK-47");		
 		menu.AddItem("weapon_galilar", "Galil AR");
-		menu.AddItem("weapon_sg556", "SG 553");
-		menu.AddItem("weapon_aug", "AUG [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		menu.AddItem("weapon_awp", "AWP [VIP]", IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		menu.AddItem("weapon_sg556", "SG 553");				
 	}
 
 	if (gc_bP90.BoolValue)
@@ -1087,36 +1079,16 @@ public int Handler_Primary(Menu menu, MenuAction action, int client, int selecti
 {
 	if (action == MenuAction_Select)
 	{
-		bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
-
 		char sBuffer[24];
 
 		menu.GetItem(selection, sBuffer, sizeof(sBuffer));
 
 		if (g_bIsCT[client])
 		{
-			if( (strcmp(sBuffer, "weapon_ak47") == 0 || strcmp(sBuffer, "weapon_awp") == 0) && !IsVip )
-			{
-				delete menu;
-				Menu_Primary(client);
-
-				PrintToChat(client, "You must buy VIP to access this item.");
-				return 0;
-			}
-
 			Format (g_sPrimary_CT[client], sizeof(g_sPrimary_CT), sBuffer);
 		}
 		else if(!g_bIsCT[client])
 		{
-			if( (strcmp(sBuffer, "weapon_m4a1") == 0 || strcmp(sBuffer, "weapon_m4a1_silencer") == 0 || strcmp(sBuffer, "weapon_aug") == 0 || strcmp(sBuffer, "weapon_awp") == 0) && !IsVip )
-			{
-				delete menu;
-				Menu_Primary(client);
-
-				PrintToChat(client, "You must buy VIP to access this item.");
-				return 0; 
-			}
-
 			Format (g_sPrimary_T[client], sizeof(g_sPrimary_T), sBuffer);
 		}
 
