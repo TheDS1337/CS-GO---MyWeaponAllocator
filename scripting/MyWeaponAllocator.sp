@@ -725,7 +725,7 @@ void Menus_Weapons(int client)
 		if( awp )
 		{
 			Format(sBuffer, sizeof(sBuffer), "%t %s", "Allow AWP", g_bSniper[client] ? "Yes" : "No");		
-			menu.AddItem("allow_awp", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+			menu.AddItem("allow_awp", sBuffer, ITEMDRAW_DEFAULT);
 
 			GetWeaponName(g_sSecondaryAWP_CT[client], weapon, sizeof(weapon));
 			Format(sBuffer, sizeof(sBuffer), "%t %s", "AWP Pistol", weapon);
@@ -752,12 +752,15 @@ void Menus_Weapons(int client)
 		Format(sBuffer, sizeof(sBuffer), "%t %s", "Force round weapon", weapon);
 		menu.AddItem("force_round_weapon", sBuffer);
 
-		Format(sBuffer, sizeof(sBuffer), "%t %s", "Allow AWP", g_bSniper[client] ? "Yes" : "No");
-		menu.AddItem("allow_awp", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		if( awp )
+		{
+			Format(sBuffer, sizeof(sBuffer), "%t %s", "Allow AWP", g_bSniper[client] ? "Yes" : "No");
+			menu.AddItem("allow_awp", sBuffer, ITEMDRAW_DEFAULT);
 
-		GetWeaponName(g_sSecondaryAWP_T[client], weapon, sizeof(weapon));
-		Format(sBuffer, sizeof(sBuffer), "%t %s", "AWP Pistol", weapon);
-		menu.AddItem("awp_pistol", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+			GetWeaponName(g_sSecondaryAWP_T[client], weapon, sizeof(weapon));
+			Format(sBuffer, sizeof(sBuffer), "%t %s", "AWP Pistol", weapon);
+			menu.AddItem("awp_pistol", sBuffer, IsVip ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		}
 
 		GetWeaponName(g_sSecondary_T[client], weapon, sizeof(weapon));
 		Format(sBuffer, sizeof(sBuffer), "%t %s", "Pistol round weapon", weapon);
@@ -1049,15 +1052,6 @@ public int Handler_Weapons(Menu menu, MenuAction action, int client, int selecti
 		}
 		else if( strcmp(sBuffer, "allow_awp") == 0 )
 		{	
-			if( !IsVip )
-			{
-				delete menu;
-				Menus_Weapons(client);
-
-				PrintToChat(client, "You must buy VIP to access this item.");
-				return 0; 
-			}
-
 			if( gc_iAWP_CT.BoolValue || gc_iScout_CT.BoolValue )
 			{
 				Menu_AWP(client);	
