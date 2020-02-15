@@ -702,7 +702,7 @@ public Action Timer_ShowInfo(Handle timer)
 void Menus_Weapons(int client)
 {
 	int team = GetClientTeam(client);
-	bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
+	bool IsVip = GetUserFlagBits(client) & (ReadFlagString(VIP_FLAG) | ADMFLAG_ROOT) ? true : false;
 
 	char sBuffer[128], weapon[32];
 	Menu menu = null;	
@@ -1029,7 +1029,7 @@ public int Handler_Weapons(Menu menu, MenuAction action, int client, int selecti
 {
 	if (action == MenuAction_Select)
 	{
-		bool IsVip = GetUserFlagBits(client) & ReadFlagString(VIP_FLAG) ? true : false;
+		bool IsVip = GetUserFlagBits(client) & (ReadFlagString(VIP_FLAG) | ADMFLAG_ROOT) ? true : false;
 
 		char sBuffer[24];
 		menu.GetItem(selection, sBuffer, sizeof(sBuffer));
